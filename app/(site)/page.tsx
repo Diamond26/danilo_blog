@@ -5,23 +5,25 @@ export default async function HomePage() {
   const posts = await getAllPosts()
 
   return (
-    <main style={{ padding: "40px", fontFamily: "sans-serif" }}>
+    <main style={{ padding: "32px", fontFamily: "system-ui, sans-serif" }}>
       <h1>Danilo Blog</h1>
 
       {posts.length === 0 && (
         <p>Nessun post trovato. Controlla Published o l'integration.</p>
       )}
 
-      <div style={{ marginTop: "20px" }}>
-        {posts.map((post) => (
-          <div key={post.id} style={{ marginBottom: "20px" }}>
-            <Link href={`/blog/${post.slug}`}>
-              <h2 style={{ cursor: "pointer" }}>{post.title}</h2>
-            </Link>
-            <p>{post.date}</p>
-          </div>
-        ))}
-      </div>
+      {posts.map((post) => (
+        <div key={post.id} style={{ marginBottom: "24px" }}>
+          <Link href={`/blog/${post.slug}`}>
+            <a style={{ fontSize: "20px", fontWeight: "bold" }}>
+              {post.title}
+            </a>
+          </Link>
+          <p style={{ fontSize: "14px", color: "#666" }}>
+            {post.date}
+          </p>
+        </div>
+      ))}
     </main>
   )
 }

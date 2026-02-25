@@ -1,10 +1,14 @@
 import { Redis } from "@upstash/redis";
 
-if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  throw new Error("Mancano le credenziali Upstash Redis nel file .env.local");
+let redis: Redis | null = null;
+
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+} else {
+  console.warn("⚠️ Credenziali Upstash Redis mancanti — il conteggio visite è disabilitato.");
 }
 
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
+export { redis };
