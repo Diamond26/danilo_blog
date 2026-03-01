@@ -48,17 +48,18 @@ function renderBlock(block: NotionBlock) {
 
   switch (type) {
     case "paragraph":
-      if (!value.rich_text?.length) return <br key={id} />;
+      if (!value.rich_text?.length)
+        return <div key={id} style={{ height: "0.5em" }} aria-hidden="true" />;
       return <p key={id}>{renderRichText(value.rich_text)}</p>;
 
     case "heading_1":
-      return <h2 key={id}>{renderRichText(value.rich_text)}</h2>;
+      return <h2 key={id} className="heading-1">{renderRichText(value.rich_text)}</h2>;
 
     case "heading_2":
-      return <h2 key={id}>{renderRichText(value.rich_text)}</h2>;
+      return <h3 key={id}>{renderRichText(value.rich_text)}</h3>;
 
     case "heading_3":
-      return <h3 key={id}>{renderRichText(value.rich_text)}</h3>;
+      return <h4 key={id}>{renderRichText(value.rich_text)}</h4>;
 
     case "bulleted_list_item":
       return <li key={id}>{renderRichText(value.rich_text)}</li>;

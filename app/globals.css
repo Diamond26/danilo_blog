@@ -831,7 +831,7 @@ h4 {
    POST DETAIL (article page)
    ═══════════════════════════════════════ */
 .post-detail {
-  max-width: 720px;
+  max-width: 740px;
   margin: 0 auto;
   padding: var(--space-5xl) var(--space-xl) var(--space-4xl);
 }
@@ -847,11 +847,12 @@ h4 {
 
 .post-detail-title {
   font-family: var(--font-heading);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 600;
   color: var(--c-text);
-  line-height: 1.25;
+  line-height: 1.2;
   margin-bottom: var(--space-lg);
+  letter-spacing: -0.01em;
 }
 
 .post-detail-meta {
@@ -860,6 +861,7 @@ h4 {
   gap: var(--space-xl);
   color: var(--c-text-faint);
   font-size: var(--fs-xs);
+  letter-spacing: 0.03em;
   margin-bottom: var(--space-2xl);
   padding-bottom: var(--space-xl);
   border-bottom: 1px solid var(--c-border);
@@ -868,7 +870,7 @@ h4 {
 .post-detail-excerpt {
   font-size: var(--fs-lg);
   color: var(--c-text-soft);
-  line-height: 1.7;
+  line-height: 1.75;
   margin-bottom: var(--space-2xl);
 }
 
@@ -877,33 +879,70 @@ h4 {
   aspect-ratio: 16/9;
   object-fit: cover;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-3xl);
 }
 
+/* ── Contenuto articolo (prose) ── */
 .post-detail-content {
   font-size: var(--fs-md);
   color: var(--c-text-soft);
-  line-height: 1.9;
+  line-height: 1.8;
 }
 
-.post-detail-content p+p {
-  margin-top: 1.4em;
+/* Paragrafi */
+.post-detail-content p {
+  margin-bottom: 1.4em;
 }
 
-.post-detail-content h2 {
-  font-family: var(--font-heading);
-  font-size: var(--fs-2xl);
-  margin: 2em 0 0.6em;
+/* Grassetto più marcato */
+.post-detail-content strong {
   color: var(--c-text);
+  font-weight: 600;
 }
 
+/* Headings con gerarchia chiara */
+/* Notion Heading 1 → h2.heading-1 (il più grande dopo il titolo) */
+.post-detail-content h2.heading-1 {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, var(--fs-2xl));
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.25;
+  margin-top: 2.5em;
+  margin-bottom: 0.75em;
+  letter-spacing: -0.01em;
+}
+
+/* Notion Heading 2 → h3 */
 .post-detail-content h3 {
   font-family: var(--font-heading);
   font-size: var(--fs-xl);
-  margin: 1.5em 0 0.5em;
+  font-weight: 600;
   color: var(--c-text);
+  line-height: 1.35;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
 }
 
+/* Notion Heading 3 → h4 */
+.post-detail-content h4 {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--c-text);
+  line-height: 1.4;
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
+
+/* Primo heading del contenuto non ha margine superiore */
+.post-detail-content>h2:first-child,
+.post-detail-content>h3:first-child,
+.post-detail-content>h4:first-child {
+  margin-top: 0;
+}
+
+/* Blockquote */
 .post-detail-content blockquote {
   border-left: 3px solid var(--c-accent);
   padding-left: 1.5em;
@@ -914,26 +953,56 @@ h4 {
   line-height: 1.7;
 }
 
+/* Liste */
 .post-detail-content ul,
 .post-detail-content ol {
-  margin: 1.2em 0;
-  padding-left: 1.5em;
+  margin: 1.5em 0;
+  padding-left: 1.75em;
 }
 
 .post-detail-content li {
-  margin-bottom: 0.4em;
+  margin-bottom: 0.6em;
+  line-height: 1.75;
 }
 
+.post-detail-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Link */
 .post-detail-content a {
   color: var(--c-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color var(--transition);
 }
 
-.post-detail-content img {
-  border-radius: var(--radius);
-  margin: 1.5em 0;
+.post-detail-content a:hover {
+  color: var(--c-accent-hover);
 }
+
+/* Immagini inline */
+.post-detail-content img {
+  border-radius: var(--radius-lg);
+  margin: 2em 0;
+}
+
+/* Separatore */
+.post-detail-content hr {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin: 2.5em 0;
+}
+
+/* Code inline */
+.post-detail-content code {
+  background: var(--c-bg-alt);
+  padding: 0.15em 0.45em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
 
 .back-link {
   display: inline-flex;
