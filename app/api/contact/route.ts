@@ -1,19 +1,31 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+
+const SMTP_CONFIG = {
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.GMAIL_USER!,
+    pass: process.env.GMAIL_PASS!,
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
+};
 
 export async function POST(request: Request) {
   try {
     const { name, email, phone, subject, message, website, privacy } =
       await request.json();
 
-    // Honeypot
     if (website) {
       return NextResponse.json({ success: true });
     }
 
-    // Validazione
     if (!name || !email || !message || !privacy) {
       return NextResponse.json(
         { error: "Nome, email e messaggio sono obbligatori." },
@@ -30,24 +42,17 @@ export async function POST(request: Request) {
     }
 
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-      console.error("Variabili Gmail mancanti");
       return NextResponse.json(
         { error: "Configurazione email incompleta." },
         { status: 500 }
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      },
-    });
+    const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
     await transporter.sendMail({
       from: `"Sito Psicologo" <${process.env.GMAIL_USER}>`,
-      to: process.env.GMAIL_USER,
+      to: "davide.secci26@gmail.com",
       replyTo: email,
       subject: `Nuovo messaggio da ${name}: ${subject || "Contatto Blog"}`,
       html: `
@@ -61,8 +66,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Errore invio email:", error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("Errore invio email:", errMsg);
     return NextResponse.json(
       { error: "Errore interno durante l'invio." },
       { status: 500 }
