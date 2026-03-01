@@ -51,17 +51,17 @@ export async function POST(request: Request) {
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
     await transporter.sendMail({
-      from: `"Sito Psicologo" <${process.env.GMAIL_USER}>`,
+      from: `"Sito Danilo Littarru" <${process.env.GMAIL_USER}>`,
       to: "davide.secci26@gmail.com",
       replyTo: email,
-      subject: `Nuovo messaggio da ${name}: ${subject || "Contatto Blog"}`,
+      subject: `Nuovo messaggio da ${name}`,
       html: `
-        <h2>Nuovo messaggio dal sito</h2>
+        <h2>Nuovo messaggio dal modulo di contatto!</h2>
         <p><strong>Nome:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Telefono:</strong> ${phone || "Non fornito"}</p>
         <hr />
-        <p>${message}</p>
+        <p>Messaggio: ${message}</p>
       `,
     });
 
