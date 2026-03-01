@@ -1,15 +1,11 @@
+import type { Post, NotionBlock } from "./types";
+
 const NOTION_API = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
 
-function getConfig() {
-  return {
-    databaseId: process.env.NOTION_DATABASE_ID,
-    token: process.env.NOTION_TOKEN,
-  };
-}
-
-function headers() {
-  const { token } = getConfig();
+function getHeaders() {
+  const token = process.env.NOTION_TOKEN;
+  if (!token) throw new Error("NOTION_TOKEN mancante in .env.local");
   return {
     Authorization: `Bearer ${token}`,
     "Notion-Version": NOTION_VERSION,
@@ -17,114 +13,159 @@ function headers() {
   };
 }
 
-export async function getAllPosts() {
-  const { databaseId, token } = getConfig();
+function getDatabaseId() {
+  const id = process.env.NOTION_DATABASE_ID;
+  if (!id) throw new Error("NOTION_DATABASE_ID mancante in .env.local");
+  return id;
+}
 
-  if (!databaseId || !token) {
-    console.error("❌ Mancano le credenziali Notion nel file .env.local");
-    return [];
-  }
+function extractPlainText(richText: any[]): string {
+  if (!richText || richText.length === 0) return "";
+  return richText.map((t) => t.plain_text).join("");
+}
 
+function extractCover(page: any): string | null {
+  if (page.cover?.type === "external") return page.cover.external.url;
+  if (page.cover?.type === "file") return page.cover.file.url;
+  return null;
+}
+
+function extractExcerpt(page: any): string {
+  const prop = page.properties.Excerpt ?? page.properties.Description;
+  if (prop?.rich_text) return extractPlainText(prop.rich_text);
+  return "";
+}
+
+function mapPage(page: any): Post {
+  return {
+    id: page.id,
+    title: extractPlainText(page.properties.Name?.title) || "Senza titolo",
+    slug: extractPlainText(page.properties.Slug?.rich_text) || "no-slug",
+    date: page.properties.Date?.date?.start || "",
+    excerpt: extractExcerpt(page),
+    cover: extractCover(page),
+  };
+}
+
+/**
+ * Recupera tutti i post pubblicati, ordinati per data decrescente.
+ * Gestisce paginazione automatica (Notion limita a 100 risultati per pagina).
+ */
+export async function getAllPosts(): Promise<Post[]> {
   try {
-    const response = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
+    const databaseId = getDatabaseId();
+    const allResults: any[] = [];
+    let hasMore = true;
+    let startCursor: string | undefined;
+
+    while (hasMore) {
+      const body: Record<string, unknown> = {
         filter: {
-          property: "Published ",
+          property: "Published",
           checkbox: { equals: true },
         },
-        sorts: [
-          {
-            property: "Date",
-            direction: "descending",
-          },
-        ],
-      }),
-      cache: "no-store",
-    });
+        sorts: [{ property: "Date", direction: "descending" }],
+        page_size: 100,
+      };
+      if (startCursor) body.start_cursor = startCursor;
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("❌ Errore dalla API Notion:", errorData);
-      return [];
+      const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(body),
+        next: { revalidate: 60 },
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Errore Notion getAllPosts:", res.status, err);
+        return [];
+      }
+
+      const data = await res.json();
+      allResults.push(...data.results);
+      hasMore = data.has_more;
+      startCursor = data.next_cursor ?? undefined;
     }
 
-    const data = await response.json();
-
-    return data.results.map((page: any) => ({
-      id: page.id,
-      title: page.properties.Name?.title?.[0]?.plain_text || "Senza titolo",
-      slug: page.properties.Slug?.rich_text?.[0]?.plain_text || "no-slug",
-      date: page.properties.Date?.date?.start || "",
-    }));
+    return allResults.map(mapPage);
   } catch (error) {
-    console.error("💀 Errore fatale nella chiamata a Notion:", error);
+    console.error("Errore fatale getAllPosts:", error);
     return [];
   }
 }
 
-export async function getPostBySlug(slug: string) {
-  const { databaseId, token } = getConfig();
-
-  if (!databaseId || !token) return null;
-
+/**
+ * Recupera un singolo post per slug.
+ */
+export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
-    const response = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
+    const databaseId = getDatabaseId();
+
+    const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
       method: "POST",
-      headers: headers(),
+      headers: getHeaders(),
       body: JSON.stringify({
         filter: {
           and: [
             { property: "Slug", rich_text: { equals: slug } },
-            { property: "Published ", checkbox: { equals: true } },
+            { property: "Published", checkbox: { equals: true } },
           ],
         },
       }),
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
-    if (!response.ok) {
-      console.error("❌ Errore ricerca post per slug:", await response.json());
+    if (!res.ok) {
+      console.error("Errore Notion getPostBySlug:", res.status);
       return null;
     }
 
-    const data = await response.json();
+    const data = await res.json();
     const page = data.results[0];
     if (!page) return null;
 
-    return {
-      id: page.id,
-      title: page.properties.Name?.title?.[0]?.plain_text || "Senza titolo",
-      slug: page.properties.Slug?.rich_text?.[0]?.plain_text || "no-slug",
-      date: page.properties.Date?.date?.start || "",
-    };
+    return mapPage(page);
   } catch (error) {
-    console.error("💀 Errore fatale getPostBySlug:", error);
+    console.error("Errore fatale getPostBySlug:", error);
     return null;
   }
 }
 
-export async function getPostBlocks(pageId: string) {
-  const { token } = getConfig();
-
-  if (!token) return [];
-
+/**
+ * Recupera i blocchi di contenuto di una pagina Notion.
+ * Gestisce paginazione automatica.
+ */
+export async function getPostBlocks(pageId: string): Promise<NotionBlock[]> {
   try {
-    const response = await fetch(`${NOTION_API}/blocks/${pageId}/children?page_size=100`, {
-      headers: headers(),
-      cache: "no-store",
-    });
+    const allBlocks: NotionBlock[] = [];
+    let hasMore = true;
+    let startCursor: string | undefined;
 
-    if (!response.ok) {
-      console.error("❌ Errore recupero blocchi:", await response.json());
-      return [];
+    while (hasMore) {
+      const url = new URL(`${NOTION_API}/blocks/${pageId}/children`);
+      url.searchParams.set("page_size", "100");
+      if (startCursor) url.searchParams.set("start_cursor", startCursor);
+
+      const res = await fetch(url.toString(), {
+        headers: getHeaders(),
+        next: { revalidate: 60 },
+      });
+
+      if (!res.ok) {
+        console.error("Errore Notion getPostBlocks:", res.status);
+        return [];
+      }
+
+      const data = await res.json();
+      allBlocks.push(...data.results);
+      hasMore = data.has_more;
+      startCursor = data.next_cursor ?? undefined;
     }
 
-    const data = await response.json();
-    return data.results;
+    return allBlocks;
   } catch (error) {
-    console.error("💀 Errore fatale getPostBlocks:", error);
+    console.error("Errore fatale getPostBlocks:", error);
     return [];
   }
 }

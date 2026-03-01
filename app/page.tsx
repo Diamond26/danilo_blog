@@ -1,0 +1,30 @@
+import { getAllPosts } from "@/lib/notion";
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import About from "@/components/About";
+import Skills from "@/components/Skills";
+import Services from "@/components/Services";
+import BlogSection from "@/components/BlogSection";
+import Contact from "@/components/Contact";
+import Footer from "@/components/Footer";
+
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const posts = await getAllPosts();
+
+  return (
+    <>
+      <Header />
+      <main>
+        <Hero />
+        <About />
+        <Skills />
+        <Services />
+        <BlogSection posts={posts} />
+        <Contact />
+      </main>
+      <Footer />
+    </>
+  );
+}
