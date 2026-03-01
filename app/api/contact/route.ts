@@ -3,15 +3,15 @@ import nodemailer from "nodemailer";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, email, phone, subject, message, website, privacy } = body;
+    const { name, email, phone, subject, message, website, privacy } =
+      await request.json();
 
-    // 1. Protezione Honeypot: se il campo "website" è pieno, è un bot
+    // Honeypot
     if (website) {
-      return NextResponse.json({ success: true, message: "Spam detected" });
+      return NextResponse.json({ success: true });
     }
 
-    // 2. Validazione server-side
+    // Validazione
     if (!name || !email || !message || !privacy) {
       return NextResponse.json(
         { error: "Nome, email e messaggio sono obbligatori." },
@@ -27,77 +27,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Verifica variabili d'ambiente (Logging sicuro lato server)
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-      console.error("ERRORE: Variabili GMAIL_USER o GMAIL_PASS mancanti nel file .env");
+      console.error("Variabili Gmail mancanti");
       return NextResponse.json(
-        { error: "Configurazione email incompleta sul server." },
+        { error: "Configurazione email incompleta." },
         { status: 500 }
       );
     }
 
-    // 4. Configurazione Nodemailer (Gmail SMTP)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
-      // Ottimizzazione per serverless/Vercel
-      pool: false,
-      secure: true,
-    } as any);
+    });
 
-    // Validazione connessione (opzionale ma utile per debug veloce)
-    try {
-      await transporter.verify();
-      console.log("Connessione SMTP verificata con successo ✅");
-    } catch (verifyError) {
-      console.error("Errore verifica SMTP (probabili credenziali errate):", verifyError);
-      throw verifyError;
-    }
-
-    // 5. Costruzione email
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: "davide.secci26@gmail.com",
+    await transporter.sendMail({
+      from: `"Sito Psicologo" <${process.env.GMAIL_USER}>`,
+      to: process.env.GMAIL_USER,
       replyTo: email,
       subject: `Nuovo messaggio da ${name}: ${subject || "Contatto Blog"}`,
-      text: `
-        Hai ricevuto un nuovo messaggio dal modulo contatti del sito.
-
-        Dati mittente:
-        - Nome: ${name}
-        - Email: ${email}
-        - Telefono: ${phone || "Non fornito"}
-
-        Messaggio:
-        ${message}
-      `,
       html: `
-        <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
-          <h2>Nuovo messaggio dal sito</h2>
-          <p><strong>Nome:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Telefono:</strong> ${phone || "Non fornito"}</p>
-          <p><strong>Oggetto:</strong> ${subject || "Nessun oggetto"}</p>
-          <hr />
-          <p><strong>Messaggio:</strong></p>
-          <p style="white-space: pre-wrap;">${message}</p>
-        </div>
+        <h2>Nuovo messaggio dal sito</h2>
+        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Telefono:</strong> ${phone || "Non fornito"}</p>
+        <hr />
+        <p>${message}</p>
       `,
-    };
-
-    // 5. Invio
-    await transporter.sendMail(mailOptions);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    // Log lato server per debug su Vercel/Local
     console.error("Errore invio email:", error);
-
     return NextResponse.json(
-      { error: "Errore interno durante l'invio del messaggio." },
+      { error: "Errore interno durante l'invio." },
       { status: 500 }
     );
   }
