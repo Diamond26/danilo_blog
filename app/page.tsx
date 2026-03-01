@@ -9,7 +9,7 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 
-export const revalidate = 5;
+export const revalidate = 60;
 
 export default async function HomePage() {
   const posts = await getAllPosts();
