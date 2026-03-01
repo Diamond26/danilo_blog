@@ -20,9 +20,9 @@ export default async function HomePage() {
       <main>
         <Hero />
         <ScrollReveal><About /></ScrollReveal>
+        <ScrollReveal><BlogSection posts={posts} /></ScrollReveal>
         <ScrollReveal><Skills /></ScrollReveal>
         <ScrollReveal><Services /></ScrollReveal>
-        <ScrollReveal><BlogSection posts={posts} /></ScrollReveal>
         <ScrollReveal><Contact /></ScrollReveal>
       </main>
       <Footer />
