@@ -13,7 +13,7 @@ export default function BlogSection({ posts }: { posts: Post[] }) {
                 </div>
 
                 {posts.length === 0 ? (
-                    <p className="empty-state">Nessun articolo disponibile al momento.</p>
+                    <p className="empty-state">Nessun articolo disponibile al momento...</p>
                 ) : (
                     <div className="posts-grid">
                         {posts.map((post) => (
