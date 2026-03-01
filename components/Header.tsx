@@ -8,6 +8,7 @@ import Image from "next/image";
 const navLinks = [
   { href: "#chi-sono", label: "Chi sono" },
   { href: "#articoli", label: "Articoli" },
+  { href: "#interviste", label: "Interviste" },
   { href: "#competenze", label: "Competenze" },
   { href: "#servizi", label: "Servizi" },
   { href: "#contatti", label: "Contattami", cta: true },

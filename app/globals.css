@@ -501,6 +501,65 @@ h4 {
 }
 
 /* ═══════════════════════════════════════
+   INTERVISTE
+   ═══════════════════════════════════════ */
+.interviews-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl);
+}
+
+.interview-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+
+.interview-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--c-border);
+}
+
+.interview-video {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  /* 16:9 */
+  background: var(--c-bg-alt);
+}
+
+.interview-video iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.interview-body {
+  padding: var(--space-lg) var(--space-xl) var(--space-xl);
+}
+
+.interview-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--c-text);
+  line-height: 1.35;
+  margin-bottom: var(--space-sm);
+}
+
+.interview-desc {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════
    BLOG POST CARDS
    ═══════════════════════════════════════ */
 .posts-grid {
@@ -1189,6 +1248,10 @@ h4 {
   }
 
   .posts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .interviews-grid {
     grid-template-columns: 1fr;
   }
 

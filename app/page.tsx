@@ -5,6 +5,7 @@ import About from "@/components/About";
 import Skills from "@/components/Skills";
 import Services from "@/components/Services";
 import BlogSection from "@/components/BlogSection";
+import Interviews from "@/components/Interviews";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -21,6 +22,7 @@ export default async function HomePage() {
         <Hero />
         <ScrollReveal><About /></ScrollReveal>
         <ScrollReveal><BlogSection posts={posts} /></ScrollReveal>
+        <ScrollReveal><Interviews /></ScrollReveal>
         <ScrollReveal><Skills /></ScrollReveal>
         <ScrollReveal><Services /></ScrollReveal>
         <ScrollReveal><Contact /></ScrollReveal>
