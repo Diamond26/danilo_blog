@@ -11,22 +11,27 @@ export default function Contact() {
     setStatus("sending");
 
     const form = e.currentTarget;
-    const data = new FormData(form);
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
 
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.fromEntries(data)),
+        body: JSON.stringify(data),
       });
+
+      const result = await res.json();
 
       if (res.ok) {
         setStatus("success");
         form.reset();
       } else {
+        console.error("Errore invio:", result.error);
         setStatus("error");
       }
-    } catch {
+    } catch (err) {
+      // Nessun log sensibile lato client come richiesto
       setStatus("error");
     }
   }
@@ -47,26 +52,37 @@ export default function Contact() {
 
         <div className="contact-layout">
           <form className="contact-form" onSubmit={handleSubmit} onChange={handleChange} noValidate>
+            {/* Honeypot field - Nascosto agli utenti, cattura i bot */}
+            <div style={{ display: "none" }} aria-hidden="true">
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" />
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="contact-name">Nome *</label>
-                <input type="text" id="contact-name" name="name" required />
+                <input type="text" id="contact-name" name="name" required placeholder="Il tuo nome" />
               </div>
               <div className="form-group">
-                <label htmlFor="contact-tel">Telefono *</label>
-                <input type="tel" id="contact-tel" name="phone" required />
+                <label htmlFor="contact-email">Email *</label>
+                <input type="email" id="contact-email" name="email" required placeholder="la-tua@email.it" />
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="contact-subject">Motivo del contatto</label>
-              <select id="contact-subject" name="subject">
-                <option value="">Seleziona...</option>
-                <option value="info">Informazioni generali</option>
-                <option value="colloquio">Prenotare un colloquio</option>
-                <option value="online">Consulenza online</option>
-                <option value="altro">Altro</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="contact-tel">Telefono</label>
+                <input type="tel" id="contact-tel" name="phone" placeholder="Il tuo numero" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="contact-subject">Motivo del contatto</label>
+                <select id="contact-subject" name="subject">
+                  <option value="">Seleziona...</option>
+                  <option value="info">Informazioni generali</option>
+                  <option value="colloquio">Prenotare un colloquio</option>
+                  <option value="online">Consulenza online</option>
+                  <option value="altro">Altro</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-group">
@@ -76,6 +92,7 @@ export default function Contact() {
                 name="message"
                 rows={5}
                 required
+                placeholder="Come posso aiutarti?"
               />
             </div>
 
