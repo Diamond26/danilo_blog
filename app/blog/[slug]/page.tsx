@@ -7,7 +7,8 @@ import NotionRenderer from "@/components/NotionRenderer";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export const revalidate = 60;
+export const revalidate = 5;
+export const dynamicParams = true;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -77,6 +78,10 @@ export default async function BlogPostPage({ params }: PageProps) {
           <span>Dr. Danilo Littarru</span>
         </div>
 
+        {post.excerpt && (
+          <p className="post-detail-excerpt">{post.excerpt}</p>
+        )}
+
         {post.cover && (
           <Image
             src={post.cover}
@@ -89,6 +94,13 @@ export default async function BlogPostPage({ params }: PageProps) {
         )}
 
         <NotionRenderer blocks={blocks} />
+
+        {blocks.length === 0 && (
+          <p className="empty-state">
+            Questo articolo non ha ancora contenuto. Apri la pagina su Notion e
+            scrivi il testo del tuo articolo direttamente dentro la pagina.
+          </p>
+        )}
       </article>
       <Footer />
     </>

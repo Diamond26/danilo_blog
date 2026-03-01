@@ -9,6 +9,7 @@ const PROP = {
   slug: "Slug",
   date: "Date",
   published: "Published ", // spazio finale presente nel DB Notion
+  cover: "Cover",
   excerpt: "Excerpt",
   description: "Description",
 } as const;
@@ -34,9 +35,32 @@ function extractPlainText(richText: any[]): string {
   return richText.map((t) => t.plain_text).join("");
 }
 
+/**
+ * Converte una stringa in slug URL-safe.
+ * "Il Mio Post 123!" → "il-mio-post-123"
+ */
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // rimuovi accenti
+    .replace(/[^a-z0-9]+/g, "-")    // caratteri non alfanumerici → trattino
+    .replace(/^-+|-+$/g, "");        // trim trattini
+}
+
 function extractCover(page: any): string | null {
+  // 1. Proprietà "Cover" del database (Files & media)
+  const coverProp = page.properties[PROP.cover];
+  if (coverProp?.files?.length > 0) {
+    const file = coverProp.files[0];
+    if (file.type === "external") return file.external.url;
+    if (file.type === "file") return file.file.url;
+  }
+
+  // 2. Fallback: cover a livello di pagina Notion
   if (page.cover?.type === "external") return page.cover.external.url;
   if (page.cover?.type === "file") return page.cover.file.url;
+
   return null;
 }
 
@@ -48,12 +72,17 @@ function extractExcerpt(page: any): string {
 }
 
 function mapPage(page: any): Post {
+  const title =
+    extractPlainText(page.properties[PROP.name]?.title) || "Senza titolo";
+  const rawSlug = extractPlainText(page.properties[PROP.slug]?.rich_text);
+
+  // Se lo slug è vuoto o invalido, genera automaticamente dal titolo
+  const slug = rawSlug ? toSlug(rawSlug) : toSlug(title) || page.id;
+
   return {
     id: page.id,
-    title:
-      extractPlainText(page.properties[PROP.name]?.title) || "Senza titolo",
-    slug:
-      extractPlainText(page.properties[PROP.slug]?.rich_text) || "no-slug",
+    title,
+    slug,
     date: page.properties[PROP.date]?.date?.start || "",
     excerpt: extractExcerpt(page),
     cover: extractCover(page),
@@ -86,7 +115,7 @@ export async function getAllPosts(): Promise<Post[]> {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(body),
-        next: { revalidate: 60 },
+        next: { revalidate: 5 },
       });
 
       if (!res.ok) {
@@ -110,35 +139,14 @@ export async function getAllPosts(): Promise<Post[]> {
 
 /**
  * Recupera un singolo post per slug.
+ * Confronta lo slug normalizzato, così funziona anche con numeri,
+ * maiuscole o caratteri speciali nel campo Slug di Notion.
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
-    const databaseId = getDatabaseId();
-
-    const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        filter: {
-          and: [
-            { property: PROP.slug, rich_text: { equals: slug } },
-            { property: PROP.published, checkbox: { equals: true } },
-          ],
-        },
-      }),
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-      console.error("Errore Notion getPostBySlug:", res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const page = data.results[0];
-    if (!page) return null;
-
-    return mapPage(page);
+    const posts = await getAllPosts();
+    const normalized = toSlug(slug);
+    return posts.find((p) => p.slug === normalized) ?? null;
   } catch (error) {
     console.error("Errore fatale getPostBySlug:", error);
     return null;
@@ -162,7 +170,7 @@ export async function getPostBlocks(pageId: string): Promise<NotionBlock[]> {
 
       const res = await fetch(url.toString(), {
         headers: getHeaders(),
-        next: { revalidate: 60 },
+        next: { revalidate: 5 },
       });
 
       if (!res.ok) {

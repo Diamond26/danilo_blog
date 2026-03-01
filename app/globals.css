@@ -847,6 +847,14 @@ h1, h2, h3, h4 {
   border-bottom: 1px solid var(--c-border);
 }
 
+.post-detail-excerpt {
+  font-size: var(--fs-lg);
+  color: var(--c-text-soft);
+  line-height: 1.7;
+  font-style: italic;
+  margin-bottom: var(--space-2xl);
+}
+
 .post-detail-cover {
   width: 100%;
   aspect-ratio: 16/9;
