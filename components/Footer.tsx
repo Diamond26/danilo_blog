@@ -1,11 +1,9 @@
-import Link from "next/link";
-
 const footerLinks = [
-  { href: "#chi-sono", label: "Chi sono" },
-  { href: "#competenze", label: "Competenze" },
-  { href: "#servizi", label: "Servizi" },
-  { href: "#articoli", label: "Articoli" },
-  { href: "#contatti", label: "Contatti" },
+  { href: "/#chi-sono", label: "Chi sono" },
+  { href: "/#competenze", label: "Competenze" },
+  { href: "/#servizi", label: "Servizi" },
+  { href: "/#articoli", label: "Articoli" },
+  { href: "/#contatti", label: "Contatti" },
 ];
 
 export default function Footer() {
@@ -48,9 +46,9 @@ export default function Footer() {
 
         <nav className="footer-nav">
           {footerLinks.map((link) => (
-            <Link key={link.href} href={`/${link.href}`}>
+            <a key={link.href} href={link.href}>
               {link.label}
-            </Link>
+            </a>
           ))}
         </nav>
       </div>

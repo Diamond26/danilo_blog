@@ -7,6 +7,7 @@ import Services from "@/components/Services";
 import BlogSection from "@/components/BlogSection";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 60;
 
@@ -18,11 +19,11 @@ export default async function HomePage() {
       <Header />
       <main>
         <Hero />
-        <About />
-        <Skills />
-        <Services />
-        <BlogSection posts={posts} />
-        <Contact />
+        <ScrollReveal><About /></ScrollReveal>
+        <ScrollReveal><Skills /></ScrollReveal>
+        <ScrollReveal><Services /></ScrollReveal>
+        <ScrollReveal><BlogSection posts={posts} /></ScrollReveal>
+        <ScrollReveal><Contact /></ScrollReveal>
       </main>
       <Footer />
     </>

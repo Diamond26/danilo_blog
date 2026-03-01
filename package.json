@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@notionhq/client": "^5.9.0",
     "@upstash/redis": "^1.36.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",

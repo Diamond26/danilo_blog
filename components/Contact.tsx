@@ -7,6 +7,7 @@ export default function Contact() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (status === "sending") return;
     setStatus("sending");
 
     const form = e.currentTarget;
@@ -30,6 +31,10 @@ export default function Contact() {
     }
   }
 
+  function handleChange() {
+    if (status === "error" || status === "success") setStatus("idle");
+  }
+
   return (
     <section className="section" id="contatti">
       <div className="container">
@@ -41,7 +46,7 @@ export default function Contact() {
         </p>
 
         <div className="contact-layout">
-          <form className="contact-form" onSubmit={handleSubmit} noValidate>
+          <form className="contact-form" onSubmit={handleSubmit} onChange={handleChange} noValidate>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="contact-name">Nome *</label>
