@@ -42,7 +42,7 @@ export default function About() {
                   marginBottom: "2rem",
                 }}
               >
-                provaaPsicologo Clinico e della Riabilitazione, Pedagogista ad
+                Psicologo Clinico e della Riabilitazione, Pedagogista ad
                 indirizzo psico-educativo, esperto dell&apos;età evolutiva e dei
                 Disturbi Specifici dell&apos;Apprendimento (DSA), con
                 particolare attenzione a bullismo e cyberbullismo.
