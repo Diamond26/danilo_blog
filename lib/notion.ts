@@ -3,6 +3,16 @@ import type { Post, NotionBlock } from "./types";
 const NOTION_API = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
 
+/* ── Nomi proprietà del database Notion ── */
+const PROP = {
+  name: "Name",
+  slug: "Slug",
+  date: "Date",
+  published: "Published ", // spazio finale presente nel DB Notion
+  excerpt: "Excerpt",
+  description: "Description",
+} as const;
+
 function getHeaders() {
   const token = process.env.NOTION_TOKEN;
   if (!token) throw new Error("NOTION_TOKEN mancante in .env.local");
@@ -31,7 +41,8 @@ function extractCover(page: any): string | null {
 }
 
 function extractExcerpt(page: any): string {
-  const prop = page.properties.Excerpt ?? page.properties.Description;
+  const prop =
+    page.properties[PROP.excerpt] ?? page.properties[PROP.description];
   if (prop?.rich_text) return extractPlainText(prop.rich_text);
   return "";
 }
@@ -39,9 +50,11 @@ function extractExcerpt(page: any): string {
 function mapPage(page: any): Post {
   return {
     id: page.id,
-    title: extractPlainText(page.properties.Name?.title) || "Senza titolo",
-    slug: extractPlainText(page.properties.Slug?.rich_text) || "no-slug",
-    date: page.properties.Date?.date?.start || "",
+    title:
+      extractPlainText(page.properties[PROP.name]?.title) || "Senza titolo",
+    slug:
+      extractPlainText(page.properties[PROP.slug]?.rich_text) || "no-slug",
+    date: page.properties[PROP.date]?.date?.start || "",
     excerpt: extractExcerpt(page),
     cover: extractCover(page),
   };
@@ -61,10 +74,10 @@ export async function getAllPosts(): Promise<Post[]> {
     while (hasMore) {
       const body: Record<string, unknown> = {
         filter: {
-          property: "Published",
+          property: PROP.published,
           checkbox: { equals: true },
         },
-        sorts: [{ property: "Date", direction: "descending" }],
+        sorts: [{ property: PROP.date, direction: "descending" }],
         page_size: 100,
       };
       if (startCursor) body.start_cursor = startCursor;
@@ -108,8 +121,8 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       body: JSON.stringify({
         filter: {
           and: [
-            { property: "Slug", rich_text: { equals: slug } },
-            { property: "Published", checkbox: { equals: true } },
+            { property: PROP.slug, rich_text: { equals: slug } },
+            { property: PROP.published, checkbox: { equals: true } },
           ],
         },
       }),
