@@ -3,8 +3,10 @@ export interface Post {
   title: string;
   slug: string;
   date: string;
-  excerpt: string;
-  cover: string | null;
+  image: string | null;
+  excerpt: string;          // plain text (usato nelle card)
+  excerptRaw: NotionRichText[]; // rich text raw (usato nella pagina articolo)
+  link: string | null;
 }
 
 export interface NotionRichText {

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { NotionBlock, NotionRichText } from "@/lib/types";
 
-function renderRichText(richTexts: NotionRichText[]) {
+export function renderRichText(richTexts: NotionRichText[]) {
   if (!richTexts || richTexts.length === 0) return null;
 
   return richTexts.map((text, i) => {
@@ -52,7 +52,7 @@ function renderBlock(block: NotionBlock) {
       return <p key={id}>{renderRichText(value.rich_text)}</p>;
 
     case "heading_1":
-      return <h1 key={id}>{renderRichText(value.rich_text)}</h1>;
+      return <h2 key={id}>{renderRichText(value.rich_text)}</h2>;
 
     case "heading_2":
       return <h2 key={id}>{renderRichText(value.rich_text)}</h2>;

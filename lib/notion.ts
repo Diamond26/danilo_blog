@@ -3,16 +3,20 @@ import type { Post, NotionBlock } from "./types";
 const NOTION_API = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
 
-/* ── Nomi proprietà del database Notion ── */
+/** Nomi delle proprietà del database Notion — devono corrispondere ESATTAMENTE */
 const PROP = {
-  name: "Name",
+  title: "Title",
   slug: "Slug",
   date: "Date",
-  published: "Published ", // spazio finale presente nel DB Notion
-  cover: "Cover",
+  image: "Image",
   excerpt: "Excerpt",
-  description: "Description",
+  link: "Link",
+  published: "Published",
 } as const;
+
+// ─────────────────────────────────────────────
+// Helpers interni
+// ─────────────────────────────────────────────
 
 function getHeaders() {
   const token = process.env.NOTION_TOKEN;
@@ -30,73 +34,110 @@ function getDatabaseId() {
   return id;
 }
 
-function extractPlainText(richText: any[]): string {
-  if (!richText || richText.length === 0) return "";
-  return richText.map((t) => t.plain_text).join("");
+function extractPlainText(richText: unknown[]): string {
+  if (!Array.isArray(richText) || richText.length === 0) return "";
+  return richText
+    .map((t) =>
+      typeof t === "object" && t !== null && "plain_text" in t
+        ? (t as { plain_text: string }).plain_text
+        : ""
+    )
+    .join("");
 }
 
 /**
- * Converte una stringa in slug URL-safe.
- * "Il Mio Post 123!" → "il-mio-post-123"
+ * "Il Mio Post 2026!" → "il-mio-post-2026"
  */
 function toSlug(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // rimuovi accenti
-    .replace(/[^a-z0-9]+/g, "-")    // caratteri non alfanumerici → trattino
-    .replace(/^-+|-+$/g, "");        // trim trattini
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-function extractCover(page: any): string | null {
-  // 1. Proprietà "Cover" del database (Files & media)
-  const coverProp = page.properties[PROP.cover];
-  if (coverProp?.files?.length > 0) {
-    const file = coverProp.files[0];
-    if (file.type === "external") return file.external.url;
-    if (file.type === "file") return file.file.url;
-  }
+/** Estrae URL immagine dalla proprietà Files & media di Notion. */
+function extractImage(
+  page: { properties: Record<string, unknown> }
+): string | null {
+  const prop = page.properties[PROP.image] as
+    | {
+      files?: Array<{
+        type: string;
+        external?: { url: string };
+        file?: { url: string };
+      }>;
+    }
+    | undefined;
 
-  // 2. Fallback: cover a livello di pagina Notion
-  if (page.cover?.type === "external") return page.cover.external.url;
-  if (page.cover?.type === "file") return page.cover.file.url;
-
+  if (!prop?.files?.length) return null;
+  const file = prop.files[0];
+  if (file.type === "external") return file.external?.url ?? null;
+  if (file.type === "file") return file.file?.url ?? null;
   return null;
 }
 
-function extractExcerpt(page: any): string {
-  const prop =
-    page.properties[PROP.excerpt] ?? page.properties[PROP.description];
-  if (prop?.rich_text) return extractPlainText(prop.rich_text);
-  return "";
+/** Estrae l'URL dal campo Link (tipo URL in Notion). */
+function extractLink(
+  page: { properties: Record<string, unknown> }
+): string | null {
+  const prop = page.properties[PROP.link] as { url?: string | null } | undefined;
+  return prop?.url ?? null;
 }
 
-function mapPage(page: any): Post {
-  const title =
-    extractPlainText(page.properties[PROP.name]?.title) || "Senza titolo";
-  const rawSlug = extractPlainText(page.properties[PROP.slug]?.rich_text);
+/** Mappa una pagina Notion raw nell'interfaccia Post. */
+function mapPage(page: {
+  id: string;
+  properties: Record<string, unknown>;
+}): Post {
+  const titleProp = page.properties[PROP.title] as
+    | { title?: unknown[] }
+    | undefined;
+  const title = extractPlainText(titleProp?.title ?? []) || "Senza titolo";
 
-  // Se lo slug è vuoto o invalido, genera automaticamente dal titolo
+  const slugProp = page.properties[PROP.slug] as
+    | { rich_text?: unknown[] }
+    | undefined;
+  const rawSlug = extractPlainText(slugProp?.rich_text ?? []);
+  // Se lo slug è valorizzato in Notion lo usa, altrimenti lo genera dal titolo
   const slug = rawSlug ? toSlug(rawSlug) : toSlug(title) || page.id;
+
+  const dateProp = page.properties[PROP.date] as
+    | { date?: { start?: string } | null }
+    | undefined;
+
+  const excerptProp = page.properties[PROP.excerpt] as
+    | { rich_text?: unknown[] }
+    | undefined;
+  const excerptRaw = (excerptProp?.rich_text ?? []) as import("./types").NotionRichText[];
+  const excerpt = extractPlainText(excerptRaw);
 
   return {
     id: page.id,
     title,
     slug,
-    date: page.properties[PROP.date]?.date?.start || "",
-    excerpt: extractExcerpt(page),
-    cover: extractCover(page),
+    date: dateProp?.date?.start ?? "",
+    image: extractImage(page),
+    excerpt,
+    excerptRaw,
+    link: extractLink(page),
   };
 }
 
+// ─────────────────────────────────────────────
+// API pubblica
+// ─────────────────────────────────────────────
+
 /**
- * Recupera tutti i post pubblicati, ordinati per data decrescente.
- * Gestisce paginazione automatica (Notion limita a 100 risultati per pagina).
+ * Recupera tutti i post con Published = true, ordinati per data decrescente.
+ * Gestisce la paginazione automatica di Notion (max 100 per request).
+ * Tutto server-side: il token Notion non è mai esposto al client.
  */
 export async function getAllPosts(): Promise<Post[]> {
   try {
     const databaseId = getDatabaseId();
-    const allResults: any[] = [];
+    const allResults: { id: string; properties: Record<string, unknown> }[] = [];
     let hasMore = true;
     let startCursor: string | undefined;
 
@@ -115,7 +156,7 @@ export async function getAllPosts(): Promise<Post[]> {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(body),
-        next: { revalidate: 5 },
+        next: { revalidate: 60 },
       });
 
       if (!res.ok) {
@@ -124,7 +165,11 @@ export async function getAllPosts(): Promise<Post[]> {
         return [];
       }
 
-      const data = await res.json();
+      const data = await res.json() as {
+        results: { id: string; properties: Record<string, unknown> }[];
+        has_more: boolean;
+        next_cursor: string | null;
+      };
       allResults.push(...data.results);
       hasMore = data.has_more;
       startCursor = data.next_cursor ?? undefined;
@@ -139,14 +184,12 @@ export async function getAllPosts(): Promise<Post[]> {
 
 /**
  * Recupera un singolo post per slug.
- * Confronta lo slug normalizzato, così funziona anche con numeri,
- * maiuscole o caratteri speciali nel campo Slug di Notion.
+ * Confronta lo slug normalizzato (generato dal campo Slug o dal Title).
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
     const posts = await getAllPosts();
-    const normalized = toSlug(slug);
-    return posts.find((p) => p.slug === normalized) ?? null;
+    return posts.find((p) => p.slug === slug) ?? null;
   } catch (error) {
     console.error("Errore fatale getPostBySlug:", error);
     return null;
@@ -154,8 +197,8 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 /**
- * Recupera i blocchi di contenuto di una pagina Notion.
- * Gestisce paginazione automatica.
+ * Recupera tutti i blocchi di contenuto di una pagina Notion.
+ * Gestisce la paginazione automatica.
  */
 export async function getPostBlocks(pageId: string): Promise<NotionBlock[]> {
   try {
@@ -170,7 +213,7 @@ export async function getPostBlocks(pageId: string): Promise<NotionBlock[]> {
 
       const res = await fetch(url.toString(), {
         headers: getHeaders(),
-        next: { revalidate: 5 },
+        next: { revalidate: 60 },
       });
 
       if (!res.ok) {
@@ -178,7 +221,11 @@ export async function getPostBlocks(pageId: string): Promise<NotionBlock[]> {
         return [];
       }
 
-      const data = await res.json();
+      const data = await res.json() as {
+        results: NotionBlock[];
+        has_more: boolean;
+        next_cursor: string | null;
+      };
       allBlocks.push(...data.results);
       hasMore = data.has_more;
       startCursor = data.next_cursor ?? undefined;
