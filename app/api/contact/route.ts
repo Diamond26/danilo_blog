@@ -27,16 +27,37 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Configurazione Nodemailer (Gmail SMTP)
+    // 3. Verifica variabili d'ambiente (Logging sicuro lato server)
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+      console.error("ERRORE: Variabili GMAIL_USER o GMAIL_PASS mancanti nel file .env");
+      return NextResponse.json(
+        { error: "Configurazione email incompleta sul server." },
+        { status: 500 }
+      );
+    }
+
+    // 4. Configurazione Nodemailer (Gmail SMTP)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
-    });
+      // Ottimizzazione per serverless/Vercel
+      pool: false,
+      secure: true,
+    } as any);
 
-    // 4. Costruzione email
+    // Validazione connessione (opzionale ma utile per debug veloce)
+    try {
+      await transporter.verify();
+      console.log("Connessione SMTP verificata con successo ✅");
+    } catch (verifyError) {
+      console.error("Errore verifica SMTP (probabili credenziali errate):", verifyError);
+      throw verifyError;
+    }
+
+    // 5. Costruzione email
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: "davide.secci26@gmail.com",
