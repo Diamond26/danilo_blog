@@ -31,6 +31,7 @@ export default function Interviews() {
                                 <iframe
                                     src={`https://www.youtube.com/embed/${video.id}`}
                                     title={video.title}
+                                    loading="lazy"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowFullScreen
                                 />

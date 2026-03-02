@@ -17,6 +17,7 @@ export default function About() {
               alt="Dr. Danilo Littarru"
               width={520}
               height={650}
+              sizes="(max-width: 480px) 100vw, 50vw"
               className="about-photo"
             />
           </div>

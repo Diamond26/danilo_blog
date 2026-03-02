@@ -24,6 +24,7 @@ export default function PostCard({ post }: { post: Post }) {
                         alt={post.title}
                         width={400}
                         height={250}
+                        sizes="(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                 ) : (
